@@ -77,41 +77,64 @@ exports.getPredictions = async (req, res) => {
   }
 };
 
-// ── POST /api/metrics/predict  (call ML microservice) ────────────────────────
+// ── POST /api/metrics/predict ────────────────────────────────────────────────
 exports.runPrediction = async (req, res) => {
+  const { device = "sda", horizon_minutes = 10 } = req.body;
   try {
-    const { device = "sda", horizon_minutes = 10 } = req.body;
-
-    // fetch last 60 records for the device to send to ML model
     const history = await MetricsModel.getOSMetrics({ device, limit: 60 });
 
-    // call Python ML microservice
-    const mlRes = await axios.post(`${ML_API}/predict`, {
-      device,
-      horizon_minutes,
-      history,
-    });
+    // Try ML microservice first (only works locally)
+    try {
+      const mlRes = await axios.post(`${ML_API}/predict`, { device, horizon_minutes, history },
+        { timeout: 3000 });
+      const prediction = mlRes.data;
+      const id = await MetricsModel.insertPrediction({
+        device, model_name: prediction.model_name,
+        predicted_iops: prediction.predicted_iops,
+        predicted_latency_ms: prediction.predicted_latency_ms,
+        confidence: prediction.confidence, horizon_minutes,
+      });
+      return res.json({ success: true, id, ...prediction, fallback: false, ml_service_online: true });
+    } catch (_) {
+      // ML service offline — use built-in prediction
+    }
 
-    const prediction = mlRes.data;
+    // Built-in prediction using recent data averages + trend
+    const recent = history.slice(-10);
+    const avgReadIops  = recent.reduce((s, r) => s + (r.read_iops  || 0), 0) / Math.max(recent.length, 1);
+    const avgWriteIops = recent.reduce((s, r) => s + (r.write_iops || 0), 0) / Math.max(recent.length, 1);
+    const avgAwait     = recent.reduce((s, r) => s + (r.await_ms   || 0), 0) / Math.max(recent.length, 1);
 
-    // persist prediction
+    // Simple trend: compare last 5 vs first 5
+    const first5 = recent.slice(0, 5);
+    const last5  = recent.slice(-5);
+    const trend  = last5.reduce((s, r) => s + r.read_iops, 0) / 5 -
+                   first5.reduce((s, r) => s + r.read_iops, 0) / 5;
+
+    const predicted_iops    = parseFloat(Math.max(0, avgReadIops + trend * (horizon_minutes / 5)).toFixed(1));
+    const predicted_latency = parseFloat((avgAwait * (1 + 0.03 * horizon_minutes)).toFixed(2));
+    const confidence        = parseFloat(Math.max(0.70, Math.min(0.95, 0.92 - 0.008 * horizon_minutes)).toFixed(3));
+
     const id = await MetricsModel.insertPrediction({
-      device,
-      model_name:           prediction.model_name,
-      predicted_iops:       prediction.predicted_iops,
-      predicted_latency_ms: prediction.predicted_latency_ms,
-      confidence:           prediction.confidence,
-      horizon_minutes,
+      device, model_name: "BuiltInPredictor",
+      predicted_iops, predicted_latency_ms: predicted_latency,
+      confidence, horizon_minutes,
     });
 
-    res.json({ success: true, id, ...prediction });
+    return res.json({
+      success: true, id,
+      device, model_name: "BuiltInPredictor",
+      horizon_minutes, predicted_iops,
+      predicted_latency_ms: predicted_latency,
+      confidence,
+      fallback: true,
+      ml_service_online: false,
+      message: "ML service offline — using built-in predictor",
+    });
   } catch (err) {
-    // if ML service down, return last stored predictions
-    const data = await MetricsModel.getPredictions({ device: req.body.device || "sda", limit: 10 });
-    res.json({ success: true, fallback: true, data, message: "ML service offline, showing stored predictions" });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
-
 // ── GET /api/metrics/anomalies?severity=critical&limit=50 ────────────────────
 exports.getAnomalies = async (req, res) => {
   try {
