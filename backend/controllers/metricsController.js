@@ -94,7 +94,7 @@ exports.runPrediction = async (req, res) => {
         predicted_latency_ms: prediction.predicted_latency_ms,
         confidence: prediction.confidence, horizon_minutes,
       });
-      return res.json({ success: true, id, ...prediction, fallback: false, ml_service_online: true });
+      return res.json({ success: true, id, ...prediction, fallback: false });
     } catch (_) {
       // ML service offline — use built-in prediction
     }
@@ -128,8 +128,6 @@ exports.runPrediction = async (req, res) => {
       predicted_latency_ms: predicted_latency,
       confidence,
       fallback: true,
-      ml_service_online: false,
-      message: "ML service offline — using built-in predictor",
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

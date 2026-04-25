@@ -19,11 +19,8 @@ export default function PredictionCard({ device = "sda" }) {
         time: `+${i + 1}m`,
         predicted_iops: Math.round(res.data.predicted_iops * (1 + 0.015 * Math.sin(i * 0.8))),
       })));
-      if (res.data.fallback) {
-        setError("ML service is offline — using built-in fallback prediction.");
-      }
     } catch {
-      setError("Prediction service unavailable. Make sure the ML API is running and the backend is reachable.");
+      setError("Prediction service unavailable. Make sure the ML API is running on port 5001.");
     } finally {
       setLoading(false);
     }
@@ -115,7 +112,7 @@ export default function PredictionCard({ device = "sda" }) {
       )}
 
       {/* Results */}
-      {result && !result.fallback && (
+      {result && (
         <>
           {/* Stat Cards */}
           <div style={{
@@ -141,13 +138,14 @@ export default function PredictionCard({ device = "sda" }) {
         </>
       )}
 
-      {(result?.fallback || result?.model_name === "BuiltInPredictor") && (
+      {result?.fallback && (
         <div style={{
           background: "#FFFBEB", border: "1px solid #FDE68A",
           borderRadius: 10, padding: "12px 16px",
           color: "#D97706", fontSize: 13,
+          marginBottom: 20,
         }}>
-          ⚡ Showing cached predictions — ML service is offline.
+          ⚡ Showing fallback predictions — ML service is offline.
         </div>
       )}
     </div>
