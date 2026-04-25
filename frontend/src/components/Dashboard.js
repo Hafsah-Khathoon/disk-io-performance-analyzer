@@ -84,10 +84,9 @@ export default function Dashboard({ summary, latestOS }) {
       {latestOS && latestOS.length > 0 && (
         <div>
           <h3 style={{
-            fontFamily: "'Poppins', sans-serif",
-            fontSize: 14, fontWeight: 600,
+            fontFamily: "'Times New Roman', Times, serif",
+            fontSize: 16, fontWeight: 600,
             color: "#1E293B", marginBottom: 14,
-            letterSpacing: "-0.1px",
           }}>
             Live Device Status
           </h3>

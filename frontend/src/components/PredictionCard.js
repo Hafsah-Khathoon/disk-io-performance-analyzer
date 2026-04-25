@@ -11,8 +11,9 @@ export default function PredictionCard({ device = "sda" }) {
 
   const run = async () => {
     setLoading(true); setError(null);
+    const BASE = process.env.REACT_APP_API_URL || "https://disk-io-performance-analyzer.onrender.com";
     try {
-      const res = await axios.post("/api/metrics/predict", { device, horizon_minutes: horizon });
+      const res = await axios.post(`${BASE}/api/metrics/predict`, { device, horizon_minutes: horizon });
       setResult(res.data);
       setHistory(Array.from({ length: horizon }, (_, i) => ({
         time: `+${i + 1}m`,

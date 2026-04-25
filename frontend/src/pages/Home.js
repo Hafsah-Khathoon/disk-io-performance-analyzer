@@ -13,15 +13,15 @@ const WORKLOAD_DATA = [
 
 const PAGE         = { padding: "28px 32px", minHeight: "calc(100vh - 60px)", background: "#F8FAFC" };
 const CARD         = { background: "#fff", borderRadius: 14, border: "1px solid #E2E8F0", boxShadow: "0 1px 4px rgba(0,0,0,0.05)", padding: 22 };
-const CARD_LABEL   = { fontSize: 12, fontWeight: 600, color: "#94A3B8", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" };
-const SECTION_TITLE = { fontFamily: "'Poppins',sans-serif", fontSize: 14, fontWeight: 600, color: "#1E293B", marginBottom: 14 };
+const CARD_LABEL   = { fontSize: 13, fontWeight: 600, color: "#94A3B8", marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "'Inter',sans-serif" };
+const SECTION_TITLE = { fontFamily: "'Times New Roman',Times,serif", fontSize: 18, fontWeight: 600, color: "#1E293B", marginBottom: 14 };
 
 function PageHeader({ title, subtitle, device, setDevice, live, setLive, onRefresh, wsConnected }) {
   return (
     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexWrap:"wrap", gap:16, marginBottom:28 }}>
       <div>
-        <h1 style={{ fontFamily:"'Poppins',sans-serif", fontSize:22, fontWeight:700, color:"#1E293B", letterSpacing:"-0.4px", marginBottom:4 }}>{title}</h1>
-        <p style={{ fontSize:13, color:"#94A3B8" }}>{subtitle}</p>
+        <h1 style={{ fontFamily:"'Times New Roman',Times,serif", fontSize:26, fontWeight:700, color:"#1E293B", letterSpacing:"-0.4px", marginBottom:4 }}>{title}</h1>
+        <p style={{ fontSize:14, color:"#94A3B8", fontWeight:500 }}>{subtitle}</p>
       </div>
       <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
         <span style={{ display:"flex", alignItems:"center", gap:5, fontSize:12,
@@ -69,14 +69,15 @@ export default function Home({ tab }) {
   const wsRef = useRef(null);
 
   const fetchAll = async () => {
+    const BASE = process.env.REACT_APP_API_URL || "https://disk-io-performance-analyzer.onrender.com";
     try {
       const [osRes, dbmsRes, anomRes, benchRes, sumRes, latestRes] = await Promise.allSettled([
-        axios.get(`/api/metrics/os?device=${device}&limit=30`),
-        axios.get("/api/metrics/dbms?limit=20"),
-        axios.get("/api/metrics/anomalies?limit=50"),
-        axios.get("/api/metrics/benchmarks"),
-        axios.get("/api/metrics/summary"),
-        axios.get("/api/metrics/os/latest"),
+        axios.get(`${BASE}/api/metrics/os?device=${device}&limit=30`),
+        axios.get(`${BASE}/api/metrics/dbms?limit=20`),
+        axios.get(`${BASE}/api/metrics/anomalies?limit=50`),
+        axios.get(`${BASE}/api/metrics/benchmarks`),
+        axios.get(`${BASE}/api/metrics/summary`),
+        axios.get(`${BASE}/api/metrics/os/latest`),
       ]);
       if (osRes.status     === "fulfilled") setOsData(osRes.value.data.data || []);
       if (dbmsRes.status   === "fulfilled") setDbmsData(dbmsRes.value.data.data || []);
@@ -90,7 +91,8 @@ export default function Home({ tab }) {
   // WebSocket for real-time push
   useEffect(() => {
     const connect = () => {
-      const ws = new WebSocket("ws://localhost:5000");
+      const wsUrl = process.env.REACT_APP_WS_URL || "wss://disk-io-performance-analyzer.onrender.com";
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
       ws.onopen  = () => setWsConnected(true);
       ws.onclose = () => { setWsConnected(false); setTimeout(connect, 3000); };
@@ -128,7 +130,7 @@ export default function Home({ tab }) {
 
   useEffect(() => {
     fetchAll();
-    const id = setInterval(fetchAll, 10000);
+    const id = setInterval(fetchAll, 5000);
     return () => clearInterval(id);
   }, [device]);
 

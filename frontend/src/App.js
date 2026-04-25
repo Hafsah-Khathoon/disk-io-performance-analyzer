@@ -39,8 +39,8 @@ export default function App() {
               <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>D</span>
             </div>
             <span style={{
-              fontFamily: "'Poppins', sans-serif",
-              fontWeight: 700, fontSize: 16,
+              fontFamily: "'Times New Roman', Times, serif",
+              fontWeight: 700, fontSize: 18,
               color: "#1E293B", letterSpacing: "-0.3px",
             }}>
               DiskIQ
@@ -51,8 +51,8 @@ export default function App() {
           {tabs.map(({ to, label, end }) => (
             <NavLink key={to} to={to} end={end} style={({ isActive }) => ({
               fontFamily: "'Inter', sans-serif",
-              fontSize: 13.5,
-              fontWeight: isActive ? 600 : 400,
+              fontSize: 14,
+              fontWeight: isActive ? 600 : 500,
               color: isActive ? "#3B82F6" : "#64748B",
               textDecoration: "none",
               padding: "6px 14px",

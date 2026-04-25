@@ -13,7 +13,14 @@ const server = http.createServer(app);
 const wss    = new WebSocket.Server({ server });
 const PORT   = process.env.PORT || 5000;
 
-app.use(cors({ origin: "*" }));
+const ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "https://disk-io-performance-analyzer.vercel.app",
+];
+app.use(cors({
+  origin: (origin, cb) => cb(null, true),
+  credentials: true,
+}));
 app.use(express.json());
 app.use("/api/metrics", metricsRoutes);
 app.get("/health", (_, res) => res.json({ status: "ok" }));

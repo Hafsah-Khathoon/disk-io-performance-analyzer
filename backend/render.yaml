@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: disk-io-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: disk_io_db
+      - key: DB_PORT
+        value: 3306
+      - key: FRONTEND_URL
+        value: https://disk-io-performance-analyzer.vercel.app
+      - key: ML_API_URL
+        value: http://localhost:5001
