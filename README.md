@@ -149,6 +149,25 @@ This starts:
 - ML Service on `http://localhost:5001`
 - Frontend on `http://localhost:3000`
 
+## Run with Docker
+
+The project now includes Docker support for the full stack.
+
+From the project root, run:
+```bash
+docker compose up --build
+```
+
+Then open:
+- Frontend: `http://localhost:3000`
+- Backend health: `http://localhost:5000/health`
+- ML health: `http://localhost:5001/health`
+
+To run just one service:
+```bash
+docker compose up --build backend
+```
+
 ## Deployment Details
 
 The project is also deployed to cloud hosting for production-style access:
