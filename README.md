@@ -1,120 +1,105 @@
-# ML-Based Disk I/O Performance Analyzer
+# Disk I/O ML Monitoring Project
 
-A full-stack intelligent monitoring system that collects **real-time disk I/O metrics from your PC**, detects anomalies using Machine Learning, and predicts future performance using Random Forest.
+A full-stack observability platform for disk I/O and database workload monitoring. This project collects live disk and CPU metrics from a Windows machine, stores them in MySQL, detects anomalies, and provides short-term IOPS prediction through a Python ML microservice.
 
----
+## Project Overview
 
-## Features
+The project is designed to make disk performance monitoring machine-aware and report-ready by combining: 
+- live operating system metrics, 
+- DBMS performance indicators, 
+- threshold-based anomaly detection, 
+- machine learning prediction service,
+- and a React dashboard for visualization.
 
-- Live disk I/O metrics collected directly from your PC every 5 seconds
-- Real-time WebSocket push to frontend (no manual refresh needed)
-- Automatic anomaly detection with severity levels (Low / High / Critical)
-- ML-powered IOPS prediction (Random Forest, 85–97% confidence)
-- Interactive dashboard with 6 views: Dashboard, OS Metrics, DBMS, Predictions, Anomalies, Algorithms
-- Algorithm comparison: Isolation Forest, Random Forest, XGBoost, LSTM, Autoencoder
-- Single command to start everything
+It is ideal for reports showing system health, performance trends, anomaly events, and ML-driven forecasting in a single integrated solution.
 
----
+## Key Features
+
+- Live data collection from the local machine every 5 seconds
+- Real-time WebSocket streaming to the frontend dashboard
+- Threshold-based anomaly detection for disk bottlenecks and spikes
+- MySQL-backed persistence for metrics, anomalies, and predictions
+- Python ML microservice for IOPS forecasting and anomaly detection
+- Six dashboard views: Dashboard, OS Metrics, DBMS, Predictions, Anomalies, Algorithms
+- Auto-refreshing charts and KPI cards with live updates
+- Simple start command via `start-all.bat`
+
+## Feature Details
+
+- **Live OS Metrics**: Collects disk read/write IOPS, throughput, latency, CPU utilization, I/O wait, and queue depth from the host machine.
+- **DBMS Metrics**: Reads MySQL `INNODB` status counters and computes buffer pool hit rate, checkpoint writes, WAL throughput, row operations, and index scan ratio.
+- **Anomaly Detection**: Uses configurable thresholds to classify events into `high` and `critical` severity levels and logs anomalies in the database.
+- **Prediction Service**: Provides a Flask API to predict future IOPS and latency using pre-trained Random Forest models and feature engineering.
+- **Dashboard Views**: Displays live KPIs, historical charts, prediction results, anomaly logs, and algorithm comparisons in a single React app.
+- **Data Storage**: Persists metrics and anomaly records in MySQL to support reporting and trend analysis.
+
+## Architecture and Component Breakdown
+
+### Frontend
+- `frontend/src/App.js`: React app with navigation tabs for the dashboard.
+- Uses React Router for routing and Recharts for charts.
+- Connects to backend REST APIs and listens for WebSocket live updates.
+
+### Backend
+- `backend/server.js`: Express server that collects metrics and broadcasts them over WebSockets.
+- Uses `systeminformation` for live hardware metrics and `mysql2` for database storage.
+- Collects OS metrics every 5 seconds and DBMS metrics every 30 seconds.
+- Stores data via `backend/models/metricsModel.js` and exposes REST routes in `backend/routes/metrics.js`.
+
+### ML Service
+- `ml-model/predict.py`: Flask microservice serving prediction and anomaly detection.
+- Endpoints:
+  - `GET /health` — service health check
+  - `POST /predict` — IOPS forecast based on recent history
+  - `POST /detect` — anomaly detection for a batch of records
+  - `GET /feature-importance` — top model features
+- Uses a pickled model bundle created by `ml-model/train_model.py`.
+
+### Database
+- MySQL stores:
+  - OS metrics
+  - DBMS metrics
+  - anomaly records
+  - prediction results
+- Schema files are in `database/schema.sql` and sample data is in `database/sample_data.sql`.
+
+## Data Flow
+
+1. Backend reads live OS metrics and MySQL DBMS metrics.
+2. Metrics are inserted into the database.
+3. Every 5 seconds, the backend broadcasts live data and anomalies to connected frontend clients.
+4. Frontend updates dashboards and charts in real time.
+5. The ML service receives recent history and returns IOPS predictions and anomaly status.
 
 ## Technical Stack
 
+### Root
+- `concurrently` to start all services together via `start-all.bat`
+
 ### Frontend
-| Technology     | Purpose                        |
-|----------------|-------------------------------|
-| React.js 18    | UI framework                  |
-| Recharts       | Charts and data visualization |
-| React Router 6 | Client-side navigation        |
-| Axios          | HTTP API calls                |
-| WebSocket API  | Real-time live data updates   |
-| Poppins / Inter| Typography                    |
+- React.js
+- React Router
+- Axios
+- Recharts
 
 ### Backend
-| Technology          | Purpose                          |
-|---------------------|----------------------------------|
-| Node.js + Express   | REST API server                  |
-| ws (WebSocket)      | Push live data to frontend       |
-| systeminformation   | Read real PC disk/CPU metrics    |
-| mysql2              | MySQL database driver            |
-| dotenv              | Environment configuration        |
-| nodemon             | Auto-restart on file changes     |
+- Node.js + Express
+- WebSocket (`ws`)
+- systeminformation
+- MySQL (`mysql2`)
+- dotenv
+- cors
 
 ### Database
-| Technology | Purpose                        |
-|------------|-------------------------------|
-| MySQL 8.0  | Store metrics, anomalies, predictions |
+- MySQL 8.0
 
 ### ML Service
-| Technology    | Purpose                          |
-|---------------|----------------------------------|
-| Python 3.x    | ML runtime                       |
-| Flask         | ML microservice API              |
-| scikit-learn  | Isolation Forest, Random Forest  |
-| XGBoost       | Bottleneck classification        |
-| Pandas/NumPy  | Data processing                  |
-| joblib        | Model serialization              |
-
----
-
-## System Flowchart
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        YOUR PC (Windows)                        │
-│                                                                 │
-│   CPU Load ──┐                                                  │
-│   Disk I/O ──┼──► systeminformation (Node.js library)          │
-│   Memory   ──┘         │                                        │
-└────────────────────────┼────────────────────────────────────────┘
-                         │ every 5 seconds
-                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   BACKEND (Node.js :5000)                       │
-│                                                                 │
-│  1. Collect live metrics from PC                                │
-│  2. Run Threshold Anomaly Detection                             │
-│       util > 90%  → CRITICAL                                    │
-│       util > 70%  → HIGH                                        │
-│       await > 15ms → CRITICAL                                   │
-│  3. Save metrics + anomalies → MySQL                            │
-│  4. Broadcast via WebSocket → Frontend                          │
-│                                                                 │
-│  REST API Endpoints:                                            │
-│  GET  /api/metrics/os          ← OS metrics history            │
-│  GET  /api/metrics/anomalies   ← Detected anomalies            │
-│  GET  /api/metrics/summary     ← Dashboard KPIs                │
-│  POST /api/metrics/predict     ← Trigger ML prediction         │
-└──────────────┬──────────────────────────┬───────────────────────┘
-               │ WebSocket (ws://)        │ HTTP POST
-               │ push every 5s           │ on demand
-               ▼                         ▼
-┌──────────────────────────┐   ┌─────────────────────────────────┐
-│   FRONTEND (React :3000) │   │   ML SERVICE (Python :5001)     │
-│                          │   │                                 │
-│  Dashboard               │   │  POST /predict                  │
-│  ├─ KPI Cards            │   │  └─ Random Forest IOPS forecast │
-│  ├─ IOPS Chart (live)    │   │                                 │
-│  ├─ Latency Chart (live) │   │  POST /detect                   │
-│  OS Metrics              │   │  └─ Isolation Forest anomaly    │
-│  DBMS Stats              │   │                                 │
-│  Predictions             │   │  GET /feature-importance        │
-│  Anomalies (live)        │   │  └─ Top 10 feature weights      │
-│  Algorithm Comparison    │   │                                 │
-└──────────────────────────┘   └─────────────────────────────────┘
-               │                         │
-               └────────────┬────────────┘
-                            ▼
-               ┌─────────────────────────┐
-               │   MySQL Database        │
-               │                         │
-               │  os_metrics             │
-               │  dbms_metrics           │
-               │  predictions            │
-               │  anomalies              │
-               │  algorithm_benchmarks   │
-               └─────────────────────────┘
-```
-
----
+- Python 3.x
+- Flask
+- pandas, numpy
+- scikit-learn
+- XGBoost
+- pickle
 
 ## Installation
 
@@ -123,80 +108,89 @@ A full-stack intelligent monitoring system that collects **real-time disk I/O me
 - Python 3.8+
 - MySQL 8.0
 
-### Step 1: Setup Database
+### Database Setup
 ```bash
 mysql -u root -p < database/schema.sql
 mysql -u root -p < database/sample_data.sql
 ```
 
-### Step 2: Configure Environment
-Edit `backend/.env`:
-```
+### Backend Setup
+1. Create `backend/.env`
+2. Add MySQL credentials:
+```env
+DB_HOST=localhost
+DB_USER=root
 DB_PASSWORD=your_mysql_password
+DB_NAME=disk_io_db
 ```
 
-### Step 3: Train ML Model
+### ML Setup
 ```bash
 cd ml-model
 pip install -r requirements.txt
 python train_model.py
 ```
 
----
+### Frontend Setup
+```bash
+cd frontend
+npm install
+```
 
-## Run (Single Command)
+## Run the System
 
+From the project root:
 ```bash
 .\start-all.bat
 ```
 
 This starts:
-- Backend API on http://localhost:5000
-- ML Service on http://localhost:5001
-- Frontend on http://localhost:3000
+- Backend API on `http://localhost:5000`
+- ML Service on `http://localhost:5001`
+- Frontend on `http://localhost:3000`
 
----
+## Deployment Details
 
-## How Live Data Works
+The project is also deployed to cloud hosting for production-style access:
 
-1. Backend uses `systeminformation` to read real CPU and disk metrics from your PC
-2. Every 5 seconds, metrics are saved to MySQL and pushed via WebSocket
-3. Frontend receives WebSocket messages and updates charts instantly
-4. Anomaly detection runs on every data point automatically
-5. No manual refresh needed — everything updates in real time
+- Frontend deployed on Vercel: `https://disk-io-performance-analyzer.vercel.app`
+- Backend service deployed on Render: `https://disk-io-performance-analyzer.onrender.com`
+- MySQL database hosted on Railway
 
----
+### Deployment architecture
 
-## Anomaly Detection Thresholds
+- The React frontend is served from Vercel and communicates with the backend via HTTPS.
+- The backend API runs on Render and connects to the Railway MySQL database.
+- The Railway database stores live metrics, anomaly records, and prediction results.
 
-| Metric         | Warning | Critical |
-|----------------|---------|----------|
-| Disk Util %    | 70%     | 90%      |
-| Await (ms)     | 5ms     | 15ms     |
-| IOWait %       | 20%     | 40%      |
-| Queue Depth    | 8       | 20       |
-| Read IOPS      | 2000    | 3500     |
-| Write IOPS     | 1500    | 2500     |
+> Note: Live local OS metric collection requires the backend to run on a Windows host with the `systeminformation` library, so deployed services may use simulated or proxy metric data for dashboards.
 
----
+## Report-Friendly Notes
 
-## ML Model Performance
+- The backend collects OS-level and DBMS-level metrics on a rolling basis and persists them for reporting.
+- Anomalies are detected using fixed thresholds and stored with severity labels.
+- The ML service can generate predictions and explain top predictors through feature importance.
+- The React UI shows real-time data alongside historical summaries for easy dashboard reporting.
 
-| Algorithm        | Precision | Recall | F1    |
-|------------------|-----------|--------|-------|
-| Isolation Forest | 94%       | 89%    | 91%   |
-| LSTM             | 91%       | 93%    | 92%   |
-| Random Forest    | 88%       | 86%    | 87%   |
-| XGBoost          | 93%       | 90%    | 91%   |
-| Autoencoder      | 87%       | 92%    | 89%   |
+## Useful Metrics for Report Sections
 
----
+- **Performance Metrics**: Read/Write IOPS, read/write throughput, await latency, service time, utilization, I/O wait.
+- **DBMS Metrics**: InnoDB buffer pool hit rate, checkpoint writes, WAL throughput, row operations.
+- **Anomaly Metrics**: Severity, metric name, anomaly score, model used.
+- **Prediction Metrics**: Forecasted IOPS, predicted latency, confidence.
 
-## Screenshots
+## Notes
 
-> Dashboard — Live KPI cards and real-time IOPS charts
+- If `ml-model/model.pkl` is missing, run `python train_model.py` first.
+- The backend simulates missing disk metrics for compatibility if live hardware data is not available.
 
-> Anomalies — Severity-coded anomaly log with model attribution
+## Contact
+
+For project questions or report clarifications, inspect:
+- `backend/server.js`
+- `frontend/src/App.js`
+- `ml-model/predict.py`
+- `database/schema.sql`
 
 > Predictions — ML-powered IOPS forecast with confidence score
 
