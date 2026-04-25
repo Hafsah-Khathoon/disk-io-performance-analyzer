@@ -1,6 +1,7 @@
 {
   "name": "disk-io-frontend",
   "version": "1.0.0",
+  "homepage": "https://Hafsah-Khathoon.github.io/disk-io-performance-analyzer",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

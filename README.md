@@ -149,6 +149,19 @@ This starts:
 - ML Service on `http://localhost:5001`
 - Frontend on `http://localhost:3000`
 
+## GitHub Pages Deployment
+
+The frontend is now configured for GitHub Pages deployment via GitHub Actions.
+After the next push to `main`, your React app should be published at:
+
+- `https://Hafsah-Khathoon.github.io/disk-io-performance-analyzer`
+
+The deployment workflow file is located at `.github/workflows/deploy-frontend.yml`.
+
+If GitHub Pages does not become active immediately, open the repo Pages settings at:
+`https://github.com/Hafsah-Khathoon/disk-io-performance-analyzer/settings/pages`
+and ensure the deployment source is set to GitHub Actions.
+
 ## Run with Docker
 
 The project now includes Docker support for the full stack.
