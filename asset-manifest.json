@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/disk-io-performance-analyzer/static/js/main.0df1929a.js",
+    "main.js": "/disk-io-performance-analyzer/static/js/main.32b1fa09.js",
     "index.html": "/disk-io-performance-analyzer/index.html",
-    "main.0df1929a.js.map": "/disk-io-performance-analyzer/static/js/main.0df1929a.js.map"
+    "main.32b1fa09.js.map": "/disk-io-performance-analyzer/static/js/main.32b1fa09.js.map"
   },
   "entrypoints": [
-    "static/js/main.0df1929a.js"
+    "static/js/main.32b1fa09.js"
   ]
 }
