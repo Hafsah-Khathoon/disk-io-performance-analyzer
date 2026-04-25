@@ -1,0 +1,10 @@
+{
+  "name": "disk-io-ml-project",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "concurrently --kill-others-on-fail --names \"BACKEND,ML,FRONTEND\" --prefix-colors \"blue,magenta,green\" \"cd backend && npm run dev\" \"cd ml-model && python predict.py\" \"cd frontend && npm start\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

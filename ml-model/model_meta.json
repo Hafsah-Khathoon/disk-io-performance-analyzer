@@ -1,0 +1,36 @@
+{
+  "base_features": [
+    "read_iops",
+    "write_iops",
+    "read_kbps",
+    "write_kbps",
+    "await_ms",
+    "svctm_ms",
+    "util_percent",
+    "iowait_percent",
+    "queue_depth"
+  ],
+  "pred_features": [
+    "read_iops",
+    "write_iops",
+    "read_kbps",
+    "write_kbps",
+    "await_ms",
+    "svctm_ms",
+    "util_percent",
+    "iowait_percent",
+    "queue_depth",
+    "read_iops_lag1",
+    "write_iops_lag1",
+    "await_lag1",
+    "read_iops_lag2",
+    "write_iops_lag2",
+    "await_lag2",
+    "read_iops_lag3",
+    "write_iops_lag3",
+    "await_lag3",
+    "read_iops_lag5",
+    "write_iops_lag5",
+    "await_lag5"
+  ]
+}
